@@ -58,15 +58,18 @@ const FormFile = () => {
   const searchColumns = (rows: any) => {
     rows.forEach((item: any, index: number) => {
       if (String(item).toLowerCase() === firstColumnName) {
-        console.log("index first column", index);
+        console.log({ firstIndex: index });
         setFirstIndex(index);
+        console.log({ firstIndex });
       }
     });
 
     rows.forEach((item: any, index: number) => {
       if (String(item).toLowerCase() === secondColumnName) {
-        console.log("index second column", index);
+        console.log({ secondIndex: index });
+
         setSecondIndex(index);
+        console.log({ secondIndex });
       }
     });
   };
@@ -75,50 +78,46 @@ const FormFile = () => {
     e.preventDefault();
     if (refInput.current) {
       readXlsxFile(refInput.current.files[0]).then((rows) => {
-        console.log(rows[0]);
-        searchColumns(rows[0]);
-        rows.forEach((item: any, index: number) => {
+        // searchColumns(rows[0]);
+        rows[0].forEach((item: any, index: number) => {
           if (String(item).toLowerCase() === firstColumnName) {
-            console.log("index first column", index);
+            console.log({ firstIndex: index });
             setFirstIndex(index);
+            console.log({ firstIndex });
           }
         });
 
         rows.forEach((item: any, index: number) => {
           if (String(item).toLowerCase() === secondColumnName) {
-            console.log("index second column", index);
+            console.log({ secondIndex: index });
+
             setSecondIndex(index);
+            console.log({ secondIndex });
           }
         });
-        if (rows[0].includes(firstColumnName || secondColumnName)) {
-          setIsValidateFieldsFile(true);
-          console.log({
-            firstColumnIndex,
-            secondColumnIndex,
-          });
-          const newArr = rows.map((item, index) => {
-            if (index > 0) {
-              return {
-                lote: item[firstIndex],
-                correo: item[secondIndex],
-              };
-            }
-          });
-          const copyNewArr = newArr.slice(1, newArr.length - 1);
-          setStatusLoading(true);
-          sendEmailArr(copyNewArr).then((res: any) => {
-            setTimeout(() => {
-              console.log(res);
-              setStatusDataSend(res?.status);
-              setStatusLoading(false);
-            }, 3000);
-          });
-        } else {
-          setIsValidateFieldsFile(false);
-        }
+
+        const copyNewArr = rows.slice(1, rows.length);
+        const newArr = copyNewArr.map((item) => {
+          console.log({ firstIndex, secondIndex });
+          return {
+            [firstColumnName]: item[firstIndex],
+            [secondColumnName]: item[secondIndex],
+          };
+        });
+        console.log(newArr);
       });
+    } else {
+      setIsValidateFieldsFile(false);
     }
   };
+  // setStatusLoading(true);
+  // sendEmailArr(newArr).then((res: any) => {
+  //   setTimeout(() => {
+  //     console.log(res);
+  //     setStatusDataSend(res?.status);
+  //     setStatusLoading(false);
+  //   }, 3000);
+  // });
   return (
     <>
       {statusLoading && (
