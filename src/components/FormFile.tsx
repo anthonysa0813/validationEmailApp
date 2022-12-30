@@ -1,10 +1,10 @@
 import React, { FormEvent, useEffect, useRef, useState } from "react";
-import { ObjectEmail } from "../interfaces";
 import readXlsxFile, { Row } from "read-excel-file";
-import { sendEmailArr, sendEmailWithAxios } from "../utils/apisFunctions";
+import { sendEmailArr } from "../utils/apisFunctions";
 import uploadFilesImage from "../assets/images/up.gif";
 import checkFileImage from "../assets/images/check.gif";
-import axios from "axios";
+import errorFileImage from "../assets/images/error.gif";
+
 import FormColumns from "./FormColumns";
 
 const FormFile = () => {
@@ -13,6 +13,7 @@ const FormFile = () => {
   const refInput = useRef<any>();
   const [isValidateFieldsFile, setIsValidateFieldsFile] = useState(true);
   const [statusDataSend, setStatusDataSend] = useState(false);
+  const [statusNumber, setStatusNumber] = useState(0);
   const [statusLoading, setStatusLoading] = useState(false);
   const [formColumns, setFormColumns] = useState(false);
   const [formNamesColumns, setFormNamesColumns] = useState({
@@ -55,69 +56,48 @@ const FormFile = () => {
     });
   };
 
-  const searchColumns = (rows: any) => {
-    rows.forEach((item: any, index: number) => {
-      if (String(item).toLowerCase() === firstColumnName) {
-        console.log({ firstIndex: index });
-        setFirstIndex(index);
-        console.log({ firstIndex });
+  const searchColumns = (rows: any, column: string) => {
+    const oneIndex = rows.map((item: any, index: number) => {
+      if (String(item).toLowerCase() === column) {
+        // console.log({ firstIndex: index });
+        // setFirstIndex(index);
+        return index;
+      } else {
+        return "";
       }
     });
-
-    rows.forEach((item: any, index: number) => {
-      if (String(item).toLowerCase() === secondColumnName) {
-        console.log({ secondIndex: index });
-
-        setSecondIndex(index);
-        console.log({ secondIndex });
-      }
-    });
+    const arrFilter = oneIndex.filter((item: number | string) => item !== "");
+    return arrFilter[0];
   };
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (refInput.current) {
-      readXlsxFile(refInput.current.files[0]).then((rows) => {
-        // searchColumns(rows[0]);
-        rows[0].forEach((item: any, index: number) => {
-          if (String(item).toLowerCase() === firstColumnName) {
-            console.log({ firstIndex: index });
-            setFirstIndex(index);
-            console.log({ firstIndex });
-          }
-        });
+    readXlsxFile(refInput.current.files[0]).then((rows) => {
+      const firstCol = searchColumns(rows[0], firstColumnName);
+      const secondtCol = searchColumns(rows[0], secondColumnName);
 
-        rows.forEach((item: any, index: number) => {
-          if (String(item).toLowerCase() === secondColumnName) {
-            console.log({ secondIndex: index });
-
-            setSecondIndex(index);
-            console.log({ secondIndex });
-          }
-        });
-
-        const copyNewArr = rows.slice(1, rows.length);
-        const newArr = copyNewArr.map((item) => {
-          console.log({ firstIndex, secondIndex });
+      console.log({ rows });
+      const objectData = rows.map((item, index) => {
+        if (index > 0) {
           return {
-            [firstColumnName]: item[firstIndex],
-            [secondColumnName]: item[secondIndex],
+            [firstColumnName]: item[firstCol],
+            [secondColumnName]: item[secondtCol],
           };
-        });
-        console.log(newArr);
+        }
       });
-    } else {
-      setIsValidateFieldsFile(false);
-    }
+      const copyArr = objectData.slice(1, rows.length);
+      console.log("objectData", copyArr);
+      setStatusLoading(true);
+      sendEmailArr(copyArr, firstColumnName, secondColumnName).then(
+        (res: any) => {
+          setStatusDataSend(res?.status);
+          setStatusLoading(false);
+          setStatusNumber(res?.status);
+        }
+      );
+    });
   };
-  // setStatusLoading(true);
-  // sendEmailArr(newArr).then((res: any) => {
-  //   setTimeout(() => {
-  //     console.log(res);
-  //     setStatusDataSend(res?.status);
-  //     setStatusLoading(false);
-  //   }, 3000);
-  // });
+
   return (
     <>
       {statusLoading && (
@@ -128,13 +108,17 @@ const FormFile = () => {
           </div>
         </div>
       )}
-      {!statusDataSend ? (
+      {!statusDataSend && (
         <form
           className="flex flex-col items-center block gap-4"
           onSubmit={onSubmit}
         >
           <div className="flex flex-col items-start gap-0 mt-3 text-center">
-            <h1 className="text-lg text-3xl">Validación de correos</h1>
+            <div className="flex justify-center  w-full my-4">
+              <h1 className="text-3xl text-indigo-600 text-3xl">
+                Validación de correos
+              </h1>
+            </div>
             {!isValidateFieldsFile && (
               <h2 className="text-red-700">
                 Campos requeridos ({firstColumnName} - {secondColumnName})
@@ -169,11 +153,23 @@ const FormFile = () => {
             Validar
           </button>
         </form>
-      ) : (
-        <div className="flex flex-col items-center h-36">
-          <h4>Se ha subido la data a la base de datos</h4>
-          <div className="h-24">
+      )}
+      {statusNumber >= 200 && statusNumber <= 300 && (
+        <div className="flex justify-center flex-col">
+          <h3 className="text-3xl text-indigo-600">La data se ha subido</h3>
+          <div className="text-center flex justify-center">
             <img src={checkFileImage} alt="" className="h-24" />
+          </div>
+        </div>
+      )}
+
+      {statusNumber >= 400 && (
+        <div className="flex justify-center flex-col">
+          <h3 className="text-3xl text-indigo-600">
+            Hubo un error en el envio de la información
+          </h3>
+          <div className="text-center  flex justify-center">
+            <img src={errorFileImage} alt="" className="h-24" />
           </div>
         </div>
       )}
