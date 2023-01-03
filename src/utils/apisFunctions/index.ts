@@ -6,7 +6,7 @@ export const sendEmailArr = async (
   secondCol: string
 ) => {
   console.log("data", data);
-  const response = await fetch(`http://localhost:5051/api`, {
+  const response = await fetch(`http://localhost:3000/api`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
